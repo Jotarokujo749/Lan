@@ -1,69 +1,72 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import time
 
 app = Flask(__name__)
 CORS(app)
 
-sources = {
-    "Wikipedia": lambda mot: f"https://fr.wikipedia.org/wiki/{mot}",
-    "Wiktionnaire": lambda mot: f"https://fr.wiktionary.org/wiki/{mot}",
-    "CNRTL": lambda mot: f"https://www.cnrtl.fr/definition/{mot}",
-    "Reverso": lambda mot: f"https://dictionnaire.reverso.net/francais-definition/{mot}",
-    "Larousse": lambda mot: f"https://www.larousse.fr/dictionnaires/francais/{mot}",
-    "Doctissimo": lambda mot: f"https://www.doctissimo.fr/html/dico/{mot}.htm",
-    "Santé.fr": lambda mot: f"https://www.sante.fr/recherche?q={mot}",
-    "MedlinePlus": lambda mot: f"https://medlineplus.gov/french/{mot}.html",
-    "Futura Sciences": lambda mot: f"https://www.futura-sciences.com/sciences/definitions/{mot}-123/",
-    "Universalis": lambda mot: f"https://www.universalis.fr/encyclopedie/{mot}/",
-    "L'Internaute": lambda mot: f"https://www.linternaute.fr/dictionnaire/fr/definition/{mot}/",
-    "France Culture": lambda mot: f"https://www.radiofrance.fr/franceculture/recherche?q={mot}",
-    "Le Robert": lambda mot: f"https://dictionnaire.lerobert.com/definition/{mot}",
-    "Toupie": lambda mot: f"https://www.toupie.org/Dictionnaire/{mot}.htm",
-    "Définition.fr": lambda mot: f"https://www.definition.fr/{mot}",
-    "Lexique.org": lambda mot: f"https://www.lexique.org/dictionnaire/{mot}.html",
-    "Techno-science": lambda mot: f"https://www.techno-science.net/definition/{mot}.html",
-    "e-santé": lambda mot: f"https://www.e-sante.fr/{mot}/guide",
-    "Pharmacorama": lambda mot: f"https://www.pharmacorama.com/{mot}.php",
-    "Vikidia": lambda mot: f"https://fr.vikidia.org/wiki/{mot}"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
 }
 
-def get_clean_text(url):
+# Étape 1 : Requête Google
+def get_google_links(query, max_links=5):
+    url = f"https://www.google.com/search?q={query}&hl=fr"
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, "html.parser")
+    links = []
+    for a in soup.select("a"):
+        href = a.get("href")
+        if href and "/url?q=" in href:
+            real_link = href.split("/url?q=")[1].split("&")[0]
+            if "google" not in real_link and real_link not in links:
+                links.append(real_link)
+        if len(links) >= max_links:
+            break
+    return links
+
+# Étape 2 : Extraction des paragraphes utiles
+def extract_useful_paragraphs(url):
     try:
-        res = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+        res = requests.get(url, headers=HEADERS, timeout=5)
         soup = BeautifulSoup(res.text, "html.parser")
-        for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
+        for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
             tag.decompose()
-        paragraphs = soup.find_all("p")
-        cleaned = []
-        for p in paragraphs:
-            txt = p.get_text(strip=True)
-            if len(txt) > 50 and "cookie" not in txt.lower() and "javascript" not in txt.lower():
-                cleaned.append(txt)
-            if len(cleaned) >= 1:
-                break
-        return cleaned[0] if cleaned else None
+        paras = soup.find_all("p")
+        for p in paras:
+            text = p.get_text(strip=True)
+            if 50 < len(text) < 400 and any(word in text.lower() for word in ["est", "sont", "signifie", "permet", "fonction", "sert", "représente"]):
+                return text
+        return None
     except:
         return None
 
-@app.route("/fusion", methods=["POST"])
-def fusion():
+# Étape 3 : Route API
+@app.route("/zamasu", methods=["POST"])
+def zamasu_response():
     data = request.get_json()
-    mot = data.get("mot", "").lower()
+    question = data.get("question", "")
+    if not question:
+        return jsonify({"error": "Aucune question reçue."}), 400
 
+    links = get_google_links(question)
     fragments = []
-    for name, func in sources.items():
-        url = func(mot)
-        txt = get_clean_text(url)
-        if txt:
-            fragments.append(f"{name} : {txt}")
+
+    for url in links:
+        para = extract_useful_paragraphs(url)
+        if para:
+            fragments.append(para)
+        time.sleep(1)  # pour éviter le blocage IP
 
     if not fragments:
-        return jsonify({"fusion": "Aucune information utile trouvée sur les sources."})
+        return jsonify({"response": "Je n'ai trouvé aucune réponse claire sur le web."})
 
-    fusion_text = ". ".join(fragments[:6]) + "."
-    return jsonify({"fusion": fusion_text})
+    # Fusion propre
+    unique_fragments = list(dict.fromkeys(fragments))  # éviter les doublons
+    phrase = " ".join(unique_fragments[:3]) + "."
+    return jsonify({"response": phrase})
 
 if __name__ == "__main__":
-    app.run(port=5002)
+    app.run(port=5005)
