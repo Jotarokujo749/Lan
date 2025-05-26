@@ -1,1 +1,1 @@
-
+pip install flask flask-cors requests beautifulsoup4
