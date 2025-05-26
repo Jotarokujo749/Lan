@@ -1,72 +1,72 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>ZAMASU X1 – Web Navigator</title>
-  <style>
-    body {
-      background: radial-gradient(circle at center, #0a0a0a, #000);
-      color: #00ffcc;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-    }
-    input {
-      width: 320px;
-      background: #222;
-      color: #eee;
-    }
-    button {
-      background: #00ffcc;
-      color: #000;
-      font-weight: bold;
-      margin-left: 10px;
-    }
-    #result {
-      margin-top: 30px;
-      padding: 20px;
-      background: #111;
-      border-radius: 10px;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-      white-space: pre-wrap;
-      box-shadow: 0 0 10px #00ffcc33;
-    }
-  </style>
-</head>
-<body>
-  <h1>ZAMASU X1 – Scraping Divin</h1>
-  <input type="text" id="question" placeholder="Ex : c'est quoi la démocratie ?">
-  <button onclick="envoyer()">Demander</button>
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import requests
+from bs4 import BeautifulSoup
+import time
 
-  <div id="result">Résultat ici...</div>
+app = Flask(__name__)
+CORS(app)
 
-  <script>
-    async function envoyer() {
-      const question = document.getElementById("question").value.trim();
-      const resDiv = document.getElementById("result");
-      resDiv.textContent = "Zamasu explore le web...";
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
+}
 
-      try {
-        const res = await fetch("http://localhost:5005/zamasu", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question })
-        });
+# Recherche Google
+def get_google_links(query, max_links=5):
+    url = f"https://www.google.com/search?q={query}&hl=fr"
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, "html.parser")
+    links = []
+    for a in soup.select("a"):
+        href = a.get("href")
+        if href and "/url?q=" in href:
+            real_link = href.split("/url?q=")[1].split("&")[0]
+            if "google" not in real_link and real_link not in links:
+                links.append(real_link)
+        if len(links) >= max_links:
+            break
+    return links
 
-        const data = await res.json();
-        resDiv.textContent = data.response || "Aucune réponse claire trouvée.";
-      } catch (err) {
-        resDiv.textContent = "Erreur : impossible de contacter le serveur.";
-      }
-    }
-  </script>
-</body>
-</html>
+# Lecture intelligente
+def extract_useful_paragraphs(url):
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=5)
+        soup = BeautifulSoup(res.text, "html.parser")
+        for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
+            tag.decompose()
+
+        paras = soup.find_all(["p", "span", "div"])
+        for p in paras:
+            txt = p.get_text(strip=True)
+            if len(txt) > 40 and len(txt) < 500:
+                if any(word in txt.lower() for word in [" est ", " sont ", " signifie", " désigne", " consiste", "permet", "action", "fonction", "concept", "notion"]):
+                    return txt
+        return None
+    except:
+        return None
+
+@app.route("/zamasu", methods=["POST"])
+def zamasu_response():
+    data = request.get_json()
+    question = data.get("question", "")
+    if not question:
+        return jsonify({"error": "Aucune question reçue."}), 400
+
+    links = get_google_links(question)
+    fragments = []
+
+    for url in links:
+        para = extract_useful_paragraphs(url)
+        if para:
+            fragments.append(para)
+        time.sleep(1)
+
+    if not fragments:
+        return jsonify({"response": "Je n'ai trouvé aucune réponse claire sur les sites visités."})
+
+    unique_fragments = list(dict.fromkeys(fragments))
+    phrase = " ".join(unique_fragments[:3]) + "."
+    return jsonify({"response": phrase})
+
+if __name__ == "__main__":
+    app.run(port=5005)
