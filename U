@@ -1,104 +1,61 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>ZAMASU X1 – Scraper Core</title>
-  <style>
-    body {
-      background: radial-gradient(circle at center, #0a0a0a, #000);
-      color: #00ffcc;
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    h1 {
-      margin: 20px 0;
-      font-size: 2em;
-      text-shadow: 0 0 15px #00ffcc;
-    }
-    #result {
-      width: 90%;
-      max-width: 800px;
-      background: #111;
-      border: 2px solid #00ffcc44;
-      padding: 20px;
-      border-radius: 12px;
-      margin-top: 20px;
-      white-space: pre-wrap;
-      box-shadow: 0 0 30px #00ffcc33;
-    }
-    #inputBar {
-      display: flex;
-      margin: 20px auto;
-      width: 90%;
-      max-width: 800px;
-    }
-    input {
-      flex: 1;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      background-color: #222;
-      color: #eee;
-      margin-right: 10px;
-    }
-    button {
-      background: #00ffcc;
-      border: none;
-      color: #000;
-      padding: 12px 20px;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #00c9a7;
-    }
-  </style>
-</head>
-<body>
-  <h1>ZAMASU X1 – FUSION SCRAPER</h1>
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import requests
+from bs4 import BeautifulSoup
 
-  <div id="inputBar">
-    <input type="text" id="mot" placeholder="Tape un mot (ex: énergie, voler, galaxie)...">
-    <button onclick="demander()">Rechercher</button>
-  </div>
+app = Flask(__name__)
+CORS(app)
 
-  <div id="result">Résultats fusionnés...</div>
+sources = {
+    "Wikipedia": lambda mot: f"https://fr.wikipedia.org/wiki/{mot}",
+    "Wiktionnaire": lambda mot: f"https://fr.wiktionary.org/wiki/{mot}",
+    "CNRTL": lambda mot: f"https://www.cnrtl.fr/definition/{mot}",
+    "Reverso": lambda mot: f"https://dictionnaire.reverso.net/francais-definition/{mot}",
+    "Larousse": lambda mot: f"https://www.larousse.fr/dictionnaires/francais/{mot}",
+    "Doctissimo": lambda mot: f"https://www.doctissimo.fr/html/dico/{mot}.htm",
+    "Santé.fr": lambda mot: f"https://www.sante.fr/recherche?q={mot}",
+    "MedlinePlus": lambda mot: f"https://medlineplus.gov/french/{mot}.html",
+    "Futura Sciences": lambda mot: f"https://www.futura-sciences.com/sciences/definitions/{mot}-123/",
+    "Universalis": lambda mot: f"https://www.universalis.fr/encyclopedie/{mot}/",
+    "L'Internaute": lambda mot: f"https://www.linternaute.fr/dictionnaire/fr/definition/{mot}/",
+    "France Culture": lambda mot: f"https://www.radiofrance.fr/franceculture/recherche?q={mot}",
+    "Le Robert": lambda mot: f"https://dictionnaire.lerobert.com/definition/{mot}",
+    "Toupie": lambda mot: f"https://www.toupie.org/Dictionnaire/{mot}.htm",
+    "Définition.fr": lambda mot: f"https://www.definition.fr/{mot}",
+    "Lexique.org": lambda mot: f"https://www.lexique.org/dictionnaire/{mot}.html",
+    "Techno-science": lambda mot: f"https://www.techno-science.net/definition/{mot}.html",
+    "e-santé": lambda mot: f"https://www.e-sante.fr/{mot}/guide",
+    "Pharmacorama": lambda mot: f"https://www.pharmacorama.com/{mot}.php",
+    "Vikidia": lambda mot: f"https://fr.vikidia.org/wiki/{mot}"
+}
 
-  <script>
-    async function demander() {
-      const mot = document.getElementById("mot").value.trim().toLowerCase();
-      const result = document.getElementById("result");
-      if (!mot) return;
+def get_clean_text(url):
+    try:
+        res = requests.get(url, timeout=5)
+        soup = BeautifulSoup(res.text, "html.parser")
+        text = soup.get_text(separator=" ", strip=True)
+        return ' '.join(text.split()[:100])  # max 100 mots par source
+    except:
+        return None
 
-      result.textContent = "Zamasu est en train de chercher...";
+@app.route("/fusion", methods=["POST"])
+def fusion():
+    data = request.get_json()
+    mot = data.get("mot", "").lower()
 
-      try {
-        const res = await fetch("http://localhost:5001/scrape", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mot })
-        });
+    fragments = []
+    for name, func in sources.items():
+        url = func(mot)
+        txt = get_clean_text(url)
+        if txt:
+            fragments.append(f"{name} : {txt}")
 
-        const data = await res.json();
-        let output = "";
+    if not fragments:
+        return jsonify({"fusion": "Aucune information trouvée sur les sources."})
 
-        for (const source in data) {
-          output += `=== ${source} ===\n${data[source]}\n\n`;
-        }
+    combined = " ".join(fragments)
+    phrase = f"{mot.capitalize()} : {combined}"
+    return jsonify({"fusion": phrase})
 
-        result.textContent = output;
-      } catch (e) {
-        result.textContent = "Erreur : impossible de contacter le serveur.";
-      }
-    }
-  </script>
-</body>
-</html>
+if __name__ == "__main__":
+    app.run(port=5002)
