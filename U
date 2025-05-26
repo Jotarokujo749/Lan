@@ -1,64 +1,104 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-from bs4 import BeautifulSoup
-
-app = Flask(__name__)
-CORS(app)
-
-def get_wikipedia(mot):
-    try:
-        res = requests.get(f"https://fr.wikipedia.org/wiki/{mot}")
-        soup = BeautifulSoup(res.text, "html.parser")
-        p = soup.find("p")
-        return p.text.strip() if p else "Rien trouvé sur Wikipedia."
-    except:
-        return "Erreur Wikipedia"
-
-def get_wiktionnaire(mot):
-    try:
-        res = requests.get(f"https://fr.wiktionary.org/wiki/{mot}")
-        soup = BeautifulSoup(res.text, "html.parser")
-        definition = soup.find("p")
-        return definition.text.strip() if definition else "Rien trouvé sur Wiktionnaire."
-    except:
-        return "Erreur Wiktionnaire"
-
-def get_cnrtl(mot):
-    try:
-        res = requests.get(f"https://www.cnrtl.fr/definition/{mot}")
-        soup = BeautifulSoup(res.text, "html.parser")
-        zone = soup.find("div", {"id": "definition"})
-        return zone.text.strip() if zone else "Rien trouvé sur CNRTL."
-    except:
-        return "Erreur CNRTL"
-
-def get_reverso(mot):
-    try:
-        res = requests.get(f"https://dictionnaire.reverso.net/francais-definition/{mot}")
-        soup = BeautifulSoup(res.text, "html.parser")
-        span = soup.find("div", class_="contentBox")
-        return span.text.strip() if span else "Rien trouvé sur Reverso."
-    except:
-        return "Erreur Reverso"
-
-@app.route("/scrape", methods=["POST"])
-def scrape():
-    data = request.get_json()
-    mot = data.get("mot", "").lower()
-
-    wiki = get_wikipedia(mot)
-    wiktionary = get_wiktionnaire(mot)
-    cnrtl = get_cnrtl(mot)
-    reverso = get_reverso(mot)
-
-    fusion = {
-        "Wikipedia": wiki,
-        "Wiktionnaire": wiktionary,
-        "CNRTL": cnrtl,
-        "Reverso": reverso
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>ZAMASU X1 – Scraper Core</title>
+  <style>
+    body {
+      background: radial-gradient(circle at center, #0a0a0a, #000);
+      color: #00ffcc;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
-    return jsonify(fusion)
+    h1 {
+      margin: 20px 0;
+      font-size: 2em;
+      text-shadow: 0 0 15px #00ffcc;
+    }
+    #result {
+      width: 90%;
+      max-width: 800px;
+      background: #111;
+      border: 2px solid #00ffcc44;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      box-shadow: 0 0 30px #00ffcc33;
+    }
+    #inputBar {
+      display: flex;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 800px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      background-color: #222;
+      color: #eee;
+      margin-right: 10px;
+    }
+    button {
+      background: #00ffcc;
+      border: none;
+      color: #000;
+      padding: 12px 20px;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #00c9a7;
+    }
+  </style>
+</head>
+<body>
+  <h1>ZAMASU X1 – FUSION SCRAPER</h1>
 
-if __name__ == "__main__":
-    app.run(port=5001)
+  <div id="inputBar">
+    <input type="text" id="mot" placeholder="Tape un mot (ex: énergie, voler, galaxie)...">
+    <button onclick="demander()">Rechercher</button>
+  </div>
+
+  <div id="result">Résultats fusionnés...</div>
+
+  <script>
+    async function demander() {
+      const mot = document.getElementById("mot").value.trim().toLowerCase();
+      const result = document.getElementById("result");
+      if (!mot) return;
+
+      result.textContent = "Zamasu est en train de chercher...";
+
+      try {
+        const res = await fetch("http://localhost:5001/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mot })
+        });
+
+        const data = await res.json();
+        let output = "";
+
+        for (const source in data) {
+          output += `=== ${source} ===\n${data[source]}\n\n`;
+        }
+
+        result.textContent = output;
+      } catch (e) {
+        result.textContent = "Erreur : impossible de contacter le serveur.";
+      }
+    }
+  </script>
+</body>
+</html>
