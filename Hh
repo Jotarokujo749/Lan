@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Parcours Avenir</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+
+    * {
+
+      margin: 0;
+
+      padding: 0;
+
+      box-sizing: border-box;
+
+    }
+
+
+    body {
+
+      background: #f5f4f1;
+
+      font-family: 'Inter', sans-serif;
+
+      min-height: 100vh;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding: 2rem;
+
+    }
+
+
+    .card {
+
+      background: #ffffff;
+
+      border-radius: 20px;
+
+      padding: 3rem 3.5rem;
+
+      max-width: 700px;
+
+      width: 100%;
+
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+
+    }
+
+
+    .tag {
+
+      font-size: 0.75rem;
+
+      font-weight: 600;
+
+      letter-spacing: 0.15em;
+
+      text-transform: uppercase;
+
+      color: #999;
+
+      margin-bottom: 2rem;
+
+    }
+
+
+    .accroche {
+
+      font-size: 1.3rem;
+
+      font-weight: 500;
+
+      color: #111;
+
+      line-height: 1.6;
+
+      margin-bottom: 2.5rem;
+
+      padding-bottom: 2rem;
+
+      border-bottom: 1px solid #ececec;
+
+    }
+
+
+    .accroche em {
+
+      color: #3b7ff5;
+
+      font-style: normal;
+
+    }
+
+
+    .bloc {
+
+      margin-bottom: 2rem;
+
+    }
+
+
+    .bloc-title {
+
+      font-size: 0.72rem;
+
+      font-weight: 600;
+
+      letter-spacing: 0.14em;
+
+      text-transform: uppercase;
+
+      color: #b0b0b0;
+
+      margin-bottom: 0.8rem;
+
+    }
+
+
+    .bloc p {
+
+      font-size: 0.98rem;
+
+      color: #444;
+
+      line-height: 1.8;
+
+    }
+
+
+    .bloc strong {
+
+      color: #111;
+
+    }
+
+
+    .sep {
+
+      height: 1px;
+
+      background: #ececec;
+
+      margin: 2rem 0;
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+  <div class="card">
+
+    <div class="tag">Oral — Parcours Avenir · 3ème</div>
+
+
+    <p class="accroche">
+
+  Mon stage m’a aidé à mieux comprendre comment fonctionne une entreprise et à préciser mon projet pour l’avenir.
+
+</p>
+
+
+    <div class="bloc">
+
+      <div class="bloc-title">Introduction en anglais</div>
+
+      <p>
+
+        <strong>Hello, my name is [ton prénom]</strong> and today I will present my work experience at Carrefour and explain why I want to work in cybersecurity later.<br><br>
+
+        Now, I will continue in French.
+
+      </p>
+
+    </div>
+
+
+    <div class="sep"></div>
+
+
+    <div class="bloc">
+
+      <div class="bloc-title">Le métier que je veux faire</div>
+
+      <p>
+
+        Plus tard, je voudrais devenir <strong>pentester</strong>, dans une Red Team. Le rôle d'un pentester est de tester la sécurité informatique d'une entreprise. Il essaie de trouver des failles avant que de vrais pirates puissent les utiliser.
+
+      </p>
+
+    </div>
+
+
+    <div class="sep"></div>
+
+
+    <div class="bloc">
+
+      <div class="bloc-title">Ce que mon stage m'a appris</div>
+
+      <p>
+
+        Même si mon stage chez Carrefour n'était pas directement lié à l'informatique, il m'a permis de découvrir comment fonctionne une grande entreprise. J'ai vu qu'il y a beaucoup d'organisation, de matériel, de gestion et de travail en équipe.
+
+      </p>
+
+      <p style="margin-top:1rem;">
+
+        Aujourd'hui, toutes les grandes entreprises utilisent des ordinateurs, des logiciels et des données. Cela veut dire qu'elles ont aussi besoin de protéger leurs systèmes contre les piratages.
+
+      </p>
+
+    </div>
+
+
+    <div class="sep"></div>
+
+
+    <div class="bloc">
+
+      <div class="bloc-title">Pourquoi ce métier m'intéresse</div>
+
+      <p>
+
+        Le métier de pentester m'intéresse parce qu'il faut être curieux, logique et patient. J'aime comprendre comment les choses fonctionnent, chercher les problèmes et trouver des solutions.
+
+      </p>
+
+      <p style="margin-top:1rem;">
+
+        Ce stage m'a confirmé que je veux travailler plus tard dans un métier lié à l'informatique et à la cybersécurité.
+
+      </p>
+
+    </div>
+
+
+  </div>
+
+
+</body>
+
+</html>
